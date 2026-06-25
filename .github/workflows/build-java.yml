@@ -11,11 +11,11 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Set up Java 24 (The Builder Boot JDK)
+    - name: Set up Java 26 (The Builder Boot JDK)
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '24'
+        java-version: '26'
 
     - name: Install Configuration Tools
       run: brew install autoconf
