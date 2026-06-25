@@ -44,8 +44,8 @@ jobs:
         # 1. Navigate to the library folder
         cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # 2. Use clang to compile a true native iOS dynamic library from the static archive
-        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -o libjli.dylib libjli.a
+        # 2. Compile with -all_load to make sure JLI_Launch is fully exported and visible
+        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -Wl,-all_load -o libjli.dylib libjli.a
         
         # 3. Create the missing release file metadata
         cd ..
