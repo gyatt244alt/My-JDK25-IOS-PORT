@@ -26,10 +26,14 @@ jobs:
     - name: Configure Java 25 for iPad JIT
       run: |
         cd mobile
+        # Force the configuration setup to stamp EVERYTHING as iOS from the absolute beginning
         sh configure \
-          --openjdk-target=aarch64-apple-ios \          --with-jvm-variants=server \
+          --openjdk-target=aarch64-apple-ios \
+          --with-jvm-variants=server \
           --disable-warnings-as-errors \
-          --disable-dtrace
+          --disable-dtrace \
+          --with-extra-cflags="-isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0" \
+          --with-extra-ldflags="-isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0"
 
     - name: Compile the Runtime Engine
       run: |
@@ -40,8 +44,8 @@ jobs:
       run: |
         cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # Force link everything and explicitly tell the linker not to enforce the platform load commands
-        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -Xlinker -no_uuid -Wl,-flat_namespace -undefined dynamic_lookup -o libjli.dylib libjli.a
+        # Now that the object files will be natively stamped for iOS, this will link cleanly!
+        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o libjli.dylib libjli.a
         
         cd ..
         echo 'JAVA_VERSION="25"' > release
