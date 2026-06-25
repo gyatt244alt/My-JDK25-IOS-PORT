@@ -43,8 +43,8 @@ jobs:
       run: |
         cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # Override the targets to trick the linker into merging the arm64 slices
-        MACOSX_DEPLOYMENT_TARGET=11.0 IPHONEOS_DEPLOYMENT_TARGET=14.0 clang -shared -dynamiclib -arch arm64 -Wl,-all_load -o libjli.dylib libjli.a
+        # Explicitly enforce the iPhoneOS SDK and tell the linker to accept the arm64 slices
+        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -Wl,-flat_namespace -o libjli.dylib libjli.a
         
         cd ..
         echo 'JAVA_VERSION="25"' > release
