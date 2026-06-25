@@ -37,20 +37,17 @@ jobs:
     - name: Compile the Runtime Engine
       run: |
         cd mobile
-        make CONF=ios-aarch64-server-release static-libs-image
+        # This forces the build system to drop Linux flags and compile true iOS dylibs
+        make CONF=ios-aarch64-server-release COMPILER_COMMAND_INITIALIZATION="" images
 
-    - name: Create Missing Release File and Fix Extensions
+    - name: Create Missing Release File
       run: |
-        # 1. Create the text file Amethyst reads
-        echo 'JAVA_VERSION="25"' > mobile/build/ios-aarch64-server-release/images/static-libs/release
-        echo 'OS_NAME="iOS"' >> mobile/build/ios-aarch64-server-release/images/static-libs/release
-        echo 'OS_ARCH="aarch64"' >> mobile/build/ios-aarch64-server-release/images/static-libs/release
-        
-        # 2. Fake the .dylib file Amethyst is hunting for by linking the library block
-        cp mobile/build/ios-aarch64-server-release/images/static-libs/lib/libjli.a mobile/build/ios-aarch64-server-release/images/static-libs/lib/libjli.dylib
+        echo 'JAVA_VERSION="25"' > mobile/build/ios-aarch64-server-release/images/jdk/release
+        echo 'OS_NAME="iOS"' >> mobile/build/ios-aarch64-server-release/images/jdk/release
+        echo 'OS_ARCH="aarch64"' >> mobile/build/ios-aarch64-server-release/images/jdk/release
         
     - name: Upload the Finished JRE Core
       uses: actions/upload-artifact@v4
       with:
         name: ios-java25-core
-        path: mobile/build/ios-aarch64-server-release/images/static-libs/
+        path: mobile/build/ios-aarch64-server-release/images/jdk/
