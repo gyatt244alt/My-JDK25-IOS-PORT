@@ -44,8 +44,21 @@ jobs:
       run: |
         cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # Now that the object files will be natively stamped for iOS, this will link cleanly!
-        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o libjli.dylib libjli.a
+        # 1. Create a temporary folder and extract all the object files (.o) from the archive
+        mkdir -p extracted
+        cd extracted
+        ar -x ../libjli.a
+        
+        # 2. Use Apple's file tool to find and delete any object file that isn't built for iOS
+        # This explicitly wipes out the accidental macOS build tools!
+        find . -name "*.o" -exec sh -c 'file "$1" | grep -q "macOS" && rm "$1"' _ {} \;
+        
+        # 3. Pack the pure, remaining iOS object files back into a clean archive
+        ar -crs ../libjli_clean.a *.o
+        cd ..
+        
+        # 4. Now, linking with -all_load will succeed flawlessly because all remaining parts are 100% iOS!
+        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o libjli.dylib libjli_clean.a
         
         cd ..
         echo 'JAVA_VERSION="25"' > release
