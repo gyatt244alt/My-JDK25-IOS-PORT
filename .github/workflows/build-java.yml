@@ -31,7 +31,8 @@ jobs:
         sh configure \
           --openjdk-target=aarch64-apple-ios \
           --with-jvm-variants=server \
-          --disable-warnings-as-errors
+          --disable-warnings-as-errors \
+          --disable-dtrace
 
     - name: Compile the Runtime Engine
       run: |
