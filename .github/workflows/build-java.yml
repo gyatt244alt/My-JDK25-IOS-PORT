@@ -40,11 +40,8 @@ jobs:
       run: |
         cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # 1. Use the Xcode toolchain to force JLI_Launch to be globally visible in the archive
-        xcrun nm -g libjli.a | grep -i JLI_Launch || true
-        
-        # 2. Link the dylib forcing the extraction of all symbols from the object files
-        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o libjli.dylib libjli.a
+        # Force link everything and explicitly tell the linker not to enforce the platform load commands
+        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -Xlinker -no_uuid -Wl,-flat_namespace -undefined dynamic_lookup -o libjli.dylib libjli.a
         
         cd ..
         echo 'JAVA_VERSION="25"' > release
