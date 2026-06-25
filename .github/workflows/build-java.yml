@@ -37,14 +37,19 @@ jobs:
     - name: Compile the Runtime Engine
       run: |
         cd mobile
-        make CONF=ios-aarch64-server-release static-libs-image
+        make CONF=ios-aarch64-server-release images
 
-    - name: Create Missing Release File and Upload
+    - name: Create Missing Release File
       run: |
-        # This creates the text file Amethyst is looking for
-        echo 'JAVA_VERSION="25"' > mobile/build/ios-aarch64-server-release/images/release
-        echo 'OS_NAME="iOS"' >> mobile/build/ios-aarch64-server-release/images/release
-        echo 'OS_ARCH="aarch64"' >> mobile/build/ios-aarch64-server-release/images/release
+        echo 'JAVA_VERSION="25"' > mobile/build/ios-aarch64-server-release/images/jdk/release
+        echo 'OS_NAME="iOS"' >> mobile/build/ios-aarch64-server-release/images/jdk/release
+        echo 'OS_ARCH="aarch64"' >> mobile/build/ios-aarch64-server-release/images/jdk/release
+        
+    - name: Upload the Finished JRE Core
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-java25-core
+        path: mobile/build/ios-aarch64-server-release/images/jdk/
         
     - name: Upload the Finished JRE Core
       uses: actions/upload-artifact@v4
