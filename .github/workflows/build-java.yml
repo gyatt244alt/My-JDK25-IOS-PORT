@@ -39,6 +39,13 @@ jobs:
         cd mobile
         make CONF=ios-aarch64-server-release static-libs-image
 
+    - name: Create Missing Release File and Upload
+      run: |
+        # This creates the text file Amethyst is looking for
+        echo 'JAVA_VERSION="25"' > mobile/build/ios-aarch64-server-release/images/release
+        echo 'OS_NAME="iOS"' >> mobile/build/ios-aarch64-server-release/images/release
+        echo 'OS_ARCH="aarch64"' >> mobile/build/ios-aarch64-server-release/images/release
+        
     - name: Upload the Finished JRE Core
       uses: actions/upload-artifact@v4
       with:
