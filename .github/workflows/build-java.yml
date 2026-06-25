@@ -1,0 +1,45 @@
+name: Build Java 25 for iOS
+
+on:
+  workflow_dispatch: # This adds a manual "Play" button so you can trigger the build whenever you want
+
+jobs:
+  build-ios:
+    runs-on: macos-latest # Tells GitHub to spin up an internet Mac mini for you
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Java 24 (The Builder Boot JDK)
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '24'
+
+    - name: Install Configuration Tools
+      run: brew install autoconf
+
+    - name: Download Mobile OpenJDK Source
+      run: |
+        git clone https://github.com/openjdk/mobile.git
+        cd mobile
+
+    - name: Configure Java 25 for iPad JIT
+      run: |
+        cd mobile
+        sh configure \
+          --openjdk-target=aarch64-apple-ios \
+          --with-jvm-variants=server \
+          --disable-warnings-as-errors
+
+    - name: Compile the Runtime Engine
+      run: |
+        cd mobile
+        make CONF=ios-aarch64-server-release static-libs-image
+
+    - name: Upload the Finished JRE Core
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-java25-core
+        path: mobile/build/ios-aarch64-server-release/images/
