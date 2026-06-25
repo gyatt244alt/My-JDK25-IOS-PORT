@@ -43,8 +43,8 @@ jobs:
       run: |
         cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # Explicitly enforce the iPhoneOS SDK and tell the linker to accept the arm64 slices
-        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -Wl,-flat_namespace -o libjli.dylib libjli.a
+        # Surgically extract and export ONLY JLI_Launch to bypass the macOS object file check
+        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-u,_JLI_Launch -Wl,-exported_symbol,_JLI_Launch -o libjli.dylib libjli.a
         
         cd ..
         echo 'JAVA_VERSION="25"' > release
