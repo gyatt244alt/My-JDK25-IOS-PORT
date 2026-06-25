@@ -44,20 +44,23 @@ jobs:
       run: |
         cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # 1. Create a temporary folder and extract all the object files (.o) from the archive
+        # 1. Create a clean extraction zone
         mkdir -p extracted
         cd extracted
         ar -x ../libjli.a
         
-        # 2. Use Apple's file tool to find and delete any object file that isn't built for iOS
-        # This explicitly wipes out the accidental macOS build tools!
-        find . -name "*.o" -exec sh -c 'file "$1" | grep -q "macOS" && rm "$1"' _ {} \;
+        # 2. Loop through and surgical delete any compiled file containing macOS tags
+        for file in *.o; do
+          if file "$file" | grep -q "macOS"; then
+            rm "$file"
+          fi
+        done
         
-        # 3. Pack the pure, remaining iOS object files back into a clean archive
+        # 3. Re-pack only the pristine, confirmed iOS pieces
         ar -crs ../libjli_clean.a *.o
         cd ..
         
-        # 4. Now, linking with -all_load will succeed flawlessly because all remaining parts are 100% iOS!
+        # 4. Compile into our final dynamic library file
         clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o libjli.dylib libjli_clean.a
         
         cd ..
