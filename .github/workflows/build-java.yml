@@ -44,26 +44,8 @@ jobs:
       run: |
         cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # 1. Create a clean extraction zone
-        mkdir -p extracted
-        cd extracted
-        ar -x ../libjli.a
-        
-        # 2. Use a recursive loop to hunt down every single object file, wherever it hid
-        find . -type f -name "*.o" | while read -r file; do
-          if file "$file" | grep -q "macOS"; then
-            echo "Removing macOS target object: $file"
-            rm "$file"
-          fi
-        done
-        
-        # 3. Re-pack only the remaining pristine iOS pieces back together
-        # We find all surviving .o files and pass them directly to the archiver
-        find . -type f -name "*.o" -print0 | xargs -0 ar -crs ../libjli_clean.a
-        cd ..
-        
-        # 4. Compile into our final dynamic library file
-        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o libjli.dylib libjli_clean.a
+        # Surgically extract and export ONLY JLI_Launch to bypass the macOS object file check
+        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-u,_JLI_Launch -Wl,-exported_symbol,_JLI_Launch -o libjli.dylib libjli.a
         
         cd ..
         echo 'JAVA_VERSION="25"' > release
