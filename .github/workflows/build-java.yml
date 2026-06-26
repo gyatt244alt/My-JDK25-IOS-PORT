@@ -35,20 +35,29 @@ jobs:
           --with-extra-cflags="-isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0" \
           --with-extra-ldflags="-isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0"
 
+    - name: Compile the Runtime Engine
+      run: |
+        cd mobile
+        # Build the proper product image target for mobile architectures
+        make CONF=ios-aarch64-server-release product-images
+
     - name: Convert Static Library to Valid Mach-O Dylib
       run: |
-        cd mobile/build/ios-aarch64-server-release/images/static-libs
+        # Step into the freshly generated JDK lib directory where the real binaries live
+        cd mobile/build/ios-aarch64-server-release/images/jdk/lib
         
-        # Automatically hunt down where libjli.a is hiding in the static-libs image
-        STATIC_LIB_PATH=$(find . -name "libjli.a" -print -quit)
-        echo "Found target library at: $STATIC_LIB_PATH"
+        # Look for the compiled jli library (it might be libjli.a or natively libjli.dylib here)
+        TARGET_LIB=$(find . -name "libjli.*" -print -quit)
+        echo "Found target JLI library at: $TARGET_LIB"
         
-        # Run libtool using the dynamically found absolute path
-        xcrun libtool -dynamic -arch_only arm64 -syslibroot $(xcrun --sdk iphoneos --show-sdk-path) -compatibility_version 1.0 -current_version 1.0 -o lib/libjli.dylib "$STATIC_LIB_PATH" -lSystem
+        # If it's a static library archive, safely convert it using libtool
+        if [[ "$TARGET_LIB" == *.a ]]; then
+          xcrun libtool -dynamic -arch_only arm64 -syslibroot $(xcrun --sdk iphoneos --show-sdk-path) -compatibility_version 1.0 -current_version 1.0 -o libjli.dylib "$TARGET_LIB" -lSystem
+        else
+          echo "JLI is already a dynamic library or image component!"
+        fi
         
-        # Verify the file was created cleanly
-        ls -la lib/libjli.dylib
-        
+        cd ../..
         echo 'JAVA_VERSION="25"' > release
         echo 'OS_NAME="iOS"' >> release
         echo 'OS_ARCH="aarch64"' >> release
@@ -57,4 +66,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ios-java25-core
-        path: mobile/build/ios-aarch64-server-release/images/static-libs/
+        path: mobile/build/ios-aarch64-server-release/images/jdk/
