@@ -35,19 +35,20 @@ jobs:
           --with-extra-cflags="-isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0" \
           --with-extra-ldflags="-isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0"
 
-    - name: Compile the Runtime Engine
-      run: |
-        cd mobile
-        make CONF=ios-aarch64-server-release static-libs-image
-
     - name: Convert Static Library to Valid Mach-O Dylib
       run: |
-        cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
+        cd mobile/build/ios-aarch64-server-release/images/static-libs
         
-        # Surgically extract and export ONLY JLI_Launch to bypass the macOS object file check
-        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-u,_JLI_Launch -Wl,-exported_symbol,_JLI_Launch -o libjli.dylib libjli.a
+        # Automatically hunt down where libjli.a is hiding in the static-libs image
+        STATIC_LIB_PATH=$(find . -name "libjli.a" -print -quit)
+        echo "Found target library at: $STATIC_LIB_PATH"
         
-        cd ..
+        # Run libtool using the dynamically found absolute path
+        xcrun libtool -dynamic -arch_only arm64 -syslibroot $(xcrun --sdk iphoneos --show-sdk-path) -compatibility_version 1.0 -current_version 1.0 -o lib/libjli.dylib "$STATIC_LIB_PATH" -lSystem
+        
+        # Verify the file was created cleanly
+        ls -la lib/libjli.dylib
+        
         echo 'JAVA_VERSION="25"' > release
         echo 'OS_NAME="iOS"' >> release
         echo 'OS_ARCH="aarch64"' >> release
