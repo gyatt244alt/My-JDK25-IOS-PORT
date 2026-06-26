@@ -26,38 +26,29 @@ jobs:
     - name: Configure Java 25 for iPad JIT
       run: |
         cd mobile
-        # Force the configuration setup to stamp EVERYTHING as iOS from the absolute beginning
         sh configure \
           --openjdk-target=aarch64-apple-ios \
           --with-jvm-variants=server \
           --disable-warnings-as-errors \
-          --disable-dtrace \
-          --with-extra-cflags="-isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0" \
-          --with-extra-ldflags="-isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0"
+          --disable-dtrace
 
     - name: Compile the Runtime Engine
       run: |
         cd mobile
-        # Build the proper product image target for mobile architectures
-        make CONF=ios-aarch64-server-release product-images
+        make CONF=ios-aarch64-server-release static-libs-image
 
     - name: Convert Static Library to Valid Mach-O Dylib
       run: |
-        # Step into the freshly generated JDK lib directory where the real binaries live
-        cd mobile/build/ios-aarch64-server-release/images/jdk/lib
+        cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # Look for the compiled jli library (it might be libjli.a or natively libjli.dylib here)
-        TARGET_LIB=$(find . -name "libjli.*" -print -quit)
-        echo "Found target JLI library at: $TARGET_LIB"
+        # 1. Dynamically locate the actual compiled libjvm.a file
+        JVM_STATIC_PATH=$(find . -name "libjvm.a" -print -quit)
+        echo "Found core static engine library at: $JVM_STATIC_PATH"
         
-        # If it's a static library archive, safely convert it using libtool
-        if [[ "$TARGET_LIB" == *.a ]]; then
-          xcrun libtool -dynamic -arch_only arm64 -syslibroot $(xcrun --sdk iphoneos --show-sdk-path) -compatibility_version 1.0 -current_version 1.0 -o libjli.dylib "$TARGET_LIB" -lSystem
-        else
-          echo "JLI is already a dynamic library or image component!"
-        fi
+        # 2. Package libjvm.a directly into the dynamic loader binary file Amethyst targets
+        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o libjli.dylib "$JVM_STATIC_PATH"
         
-        cd ../..
+        cd ..
         echo 'JAVA_VERSION="25"' > release
         echo 'OS_NAME="iOS"' >> release
         echo 'OS_ARCH="aarch64"' >> release
@@ -66,4 +57,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ios-java25-core
-        path: mobile/build/ios-aarch64-server-release/images/jdk/
+        path: mobile/build/ios-aarch64-server-release/images/static-libs/
