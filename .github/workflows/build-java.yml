@@ -49,15 +49,17 @@ jobs:
         cd extracted
         ar -x ../libjli.a
         
-        # 2. Loop through and surgical delete any compiled file containing macOS tags
-        for file in *.o; do
+        # 2. Use a recursive loop to hunt down every single object file, wherever it hid
+        find . -type f -name "*.o" | while read -r file; do
           if file "$file" | grep -q "macOS"; then
+            echo "Removing macOS target object: $file"
             rm "$file"
           fi
         done
         
-        # 3. Re-pack only the pristine, confirmed iOS pieces
-        ar -crs ../libjli_clean.a *.o
+        # 3. Re-pack only the remaining pristine iOS pieces back together
+        # We find all surviving .o files and pass them directly to the archiver
+        find . -type f -name "*.o" -print0 | xargs -0 ar -crs ../libjli_clean.a
         cd ..
         
         # 4. Compile into our final dynamic library file
