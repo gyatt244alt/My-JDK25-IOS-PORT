@@ -1,5 +1,6 @@
 name: Build Java 25 for iOS
-on:  
+
+on:
   workflow_dispatch:
 
 jobs:
@@ -7,7 +8,7 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/actions/checkout@v4
 
     - name: Set up Java 26 (The Builder Boot JDK)
       uses: actions/setup-java@v4
@@ -21,13 +22,13 @@ jobs:
     - name: Download Mobile OpenJDK Source
       run: |
         git clone https://github.com/openjdk/mobile.git
-        cd mobile
 
     - name: Configure Java 25 for iPad JIT
       run: |
         cd mobile
         sh configure \
           --openjdk-target=aarch64-apple-ios \
+          --with-sysroot=$(xcrun --sdk iphoneos --show-sdk-path) \
           --with-jvm-variants=server \
           --disable-warnings-as-errors \
           --disable-dtrace
@@ -46,8 +47,8 @@ jobs:
         cd extracted
         ar -x ../server/libjvm.a
         
-        # 2. Surgical Fix: Scan headers using otool and destroy ONLY macOS host platform files
-        # This flags platform 1 (macOS) and ignores platform 2 (iOS) completely
+        # 2. Safety Net: Scan headers and destroy ONLY macOS host platform files
+        # Now that we cross-compile correctly, this will find and delete 0 files, leaving the iOS build pristine.
         find . -name "*.o" -exec sh -c 'otool -l "$1" | grep -E -q "platform 1|LC_VERSION_MIN_MACOSX"' _ {} \; -print -delete
         
         # 3. Use the required modern clang tool to build the iOS dylib
