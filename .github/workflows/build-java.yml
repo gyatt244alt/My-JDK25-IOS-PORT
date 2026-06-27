@@ -46,9 +46,9 @@ jobs:
         cd extracted
         ar -x ../server/libjvm.a
         
-        # 2. Automatically find and destroy ANY file built for macOS (Fixed Typo!)
-        # -qi "mach-o" makes it case-insensitive so it catches the real binary header perfectly
-        find . -name "*.o" -exec sh -c 'file "$1" | grep -qi "mach-o"' _ {} \; -print -delete
+        # 2. Surgical Fix: Scan headers using otool and destroy ONLY macOS host platform files
+        # This flags platform 1 (macOS) and ignores platform 2 (iOS) completely
+        find . -name "*.o" -exec sh -c 'otool -l "$1" | grep -E -q "platform 1|LC_VERSION_MIN_MACOSX"' _ {} \; -print -delete
         
         # 3. Use the required modern clang tool to build the iOS dylib
         clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o ../libjli.dylib *.o -lSystem
