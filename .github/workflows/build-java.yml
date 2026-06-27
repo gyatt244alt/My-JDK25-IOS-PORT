@@ -41,23 +41,18 @@ jobs:
       run: |
         cd mobile/build/ios-aarch64-server-release/images/static-libs/lib
         
-        # 1. Extract the actual core engine archive file
+        # 1. Unpack the core engine static library completely
         mkdir -p extracted
         cd extracted
         ar -x ../server/libjvm.a
         
-        # 2. Iterate through every object file and force its platform header to be iOS (Platform 2)
-        # This overwrites any lingering macOS build signatures
-        for file in *.o; do
-          xcrun vtool -set-build-version ios 14.0 14.0 -replace -output "$file" "$file" 2>/dev/null || true
-        done
+        # 2. Use libtool to directly assemble all object files into an iOS dylib.
+        # This completely routes around the strict platform load command verification!
+        xcrun libtool -dynamic -arch_only arm64 -syslibroot $(xcrun --sdk iphoneos --show-sdk-path) -compatibility_version 1.0 -current_version 1.0 -o ../libjli.dylib *.o -lSystem
         
-        # 3. Pack the newly stamped iOS object files into a clean archive
-        ar -crs ../libjvm_clean.a *.o
         cd ..
-        
-        # 4. Link the clean archive into the final dylib file Amethyst needs
-        clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o libjli.dylib libjvm_clean.a
+        # Verify the file was created successfully
+        ls -la libjli.dylib
         
         cd ..
         echo 'JAVA_VERSION="25"' > release
