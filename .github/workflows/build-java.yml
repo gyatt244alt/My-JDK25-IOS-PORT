@@ -46,11 +46,9 @@ jobs:
         cd extracted
         ar -x ../server/libjvm.a
         
-        # 2. Obliterate ALL variations of the macOS host-compiled files
-        # This catches abstractCompiler.o, abstract_vm_version.o, and everything similar
-        rm -f *[Aa]bstract*
-        rm -f *[Vv]ersion*
-        rm -f *[Bb]uild*
+        # 2. Automatically find and destroy ANY file built for macOS
+        # This scans the internal binary headers and deletes them instantly
+        find . -name "*.o" -exec sh -c 'file "$1" | grep -q "Mac-O"' _ {} \; -print -delete
         
         # 3. Use the required modern clang tool to build the iOS dylib
         clang -shared -dynamiclib -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=14.0 -Wl,-all_load -o ../libjli.dylib *.o -lSystem
