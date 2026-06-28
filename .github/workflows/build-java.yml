@@ -30,6 +30,8 @@ jobs:
           --openjdk-target=aarch64-apple-ios \
           --with-sysroot=$(xcrun --sdk iphoneos --show-sdk-path) \
           --with-cups-include=$(xcrun --sdk macosx --show-sdk-path)/usr/include \
+          --with-extra-cflags="-I$(xcrun --sdk macosx --show-sdk-path)/usr/include" \
+          --with-extra-cxxflags="-I$(xcrun --sdk macosx --show-sdk-path)/usr/include" \
           --with-jvm-variants=server \
           --disable-warnings-as-errors \
           --disable-dtrace
