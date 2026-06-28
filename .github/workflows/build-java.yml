@@ -26,12 +26,22 @@ jobs:
     - name: Configure Java 25 for iPad JIT
       run: |
         cd mobile
+        
+        # 1. Create a clean isolated header sandbox to avoid C++ namespace pollution
+        mkdir -p mock_include
+        cp "$(xcrun --sdk macosx --show-sdk-path)/usr/include/libproc.h" mock_include/
+        
+        mkdir -p mock_include/cups
+        cp "$(xcrun --sdk macosx --show-sdk-path)/usr/include/cups/cups.h" mock_include/cups/
+        cp "$(xcrun --sdk macosx --show-sdk-path)/usr/include/cups/ppd.h" mock_include/cups/
+        
+        # 2. Run configure referencing only our surgical sandbox path
         sh configure \
           --openjdk-target=aarch64-apple-ios \
           --with-sysroot=$(xcrun --sdk iphoneos --show-sdk-path) \
-          --with-cups-include=$(xcrun --sdk macosx --show-sdk-path)/usr/include \
-          --with-extra-cflags="-I$(xcrun --sdk macosx --show-sdk-path)/usr/include" \
-          --with-extra-cxxflags="-I$(xcrun --sdk macosx --show-sdk-path)/usr/include" \
+          --with-cups-include=$(pwd)/mock_include \
+          --with-extra-cflags="-I$(pwd)/mock_include" \
+          --with-extra-cxxflags="-I$(pwd)/mock_include" \
           --with-jvm-variants=server \
           --disable-warnings-as-errors \
           --disable-dtrace
