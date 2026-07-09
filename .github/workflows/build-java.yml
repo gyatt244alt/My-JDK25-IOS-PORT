@@ -23,22 +23,24 @@ jobs:
       run: |
         git clone https://github.com/openjdk/mobile.git
 
-    - name: Configure Java 25 for iPad JIT
-      run: |
-        cd mobile
-        
-        # 1. Create a clean isolated header sandbox
-        mkdir -p mock_include/sys
-        # Copy the headers from the macOS SDK host
-        cp "$(xcrun --sdk macosx --show-sdk-path)/usr/include/libproc.h" mock_include/
-        cp "$(xcrun --sdk macosx --show-sdk-path)/usr/include/sys/proc_info.h" mock_include/sys/
-        
-        mkdir -p mock_include/cups
-        cp "$(xcrun --sdk macosx --show-sdk-path)/usr/include/cups/cups.h" mock_include/cups/
-        cp "$(xcrun --sdk macosx --show-sdk-path)/usr/include/cups/ppd.h" mock_include/cups/
-        
-        # 2. Run configure with the expanded sandbox
-        sh configure \
+          - name: Configure Java 25 for iPad JIT
+        run: |
+          cd mobile
+          
+          # 1. Create a clean isolated header sandbox
+          mkdir -p mock_include/sys
+          mkdir -p mock_include/cups
+          
+          # Copy headers from the macOS SDK host
+          # Using $(...) to resolve the path properly
+          cp $(xcrun --sdk macosx --show-sdk-path)/usr/include/libproc.h mock_include/
+          cp $(xcrun --sdk macosx --show-sdk-path)/usr/include/sys/proc_info.h mock_include/sys/
+          
+          cp $(xcrun --sdk macosx --show-sdk-path)/usr/include/cups/cups.h mock_include/cups/
+          cp $(xcrun --sdk macosx --show-sdk-path)/usr/include/cups/ppd.h mock_include/cups/
+          
+          # 2. Run configure with the expanded sandbox
+          sh configure \
           --openjdk-target=aarch64-apple-ios \
           --with-sysroot=$(xcrun --sdk iphoneos --show-sdk-path) \
           --with-cups-include=$(pwd)/mock_include \
@@ -47,6 +49,7 @@ jobs:
           --with-jvm-variants=server \
           --disable-warnings-as-errors \
           --disable-dtrace
+
 
 
     - name: Compile the Runtime Engine
