@@ -23,7 +23,7 @@ jobs:
       run: |
         git clone https://github.com/openjdk/mobile.git
 
-        - name: Configure Java 25 for iPad JIT
+    - name: Configure Java 25 for iPad JIT
       run: |
         cd mobile
         
