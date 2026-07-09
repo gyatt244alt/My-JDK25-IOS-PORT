@@ -23,32 +23,36 @@ jobs:
       run: |
         git clone https://github.com/openjdk/mobile.git
 
-          - name: Configure Java 25 for iPad JIT
+    - name: Configure Java 25 for iPad JIT
         run: |
           cd mobile
           
-          # 1. Create a clean isolated header sandbox
+          # Create header sandbox
           mkdir -p mock_include/sys
           mkdir -p mock_include/cups
           
-          # Copy headers from the macOS SDK host
-          # Using $(...) to resolve the path properly
-          cp $(xcrun --sdk macosx --show-sdk-path)/usr/include/libproc.h mock_include/
-          cp $(xcrun --sdk macosx --show-sdk-path)/usr/include/sys/proc_info.h mock_include/sys/
+          # Get the SDK path once
+          MACOSX_SDK=$(xcrun --sdk macosx --show-sdk-path)
           
-          cp $(xcrun --sdk macosx --show-sdk-path)/usr/include/cups/cups.h mock_include/cups/
-          cp $(xcrun --sdk macosx --show-sdk-path)/usr/include/cups/ppd.h mock_include/cups/
+          # Copy headers safely
+          cp "$MACOSX_SDK/usr/include/libproc.h" mock_include/
+          cp "$MACOSX_SDK/usr/include/sys/proc_info.h" mock_include/sys/
+          cp "$MACOSX_SDK/usr/include/cups/cups.h" mock_include/cups/
+          cp "$MACOSX_SDK/usr/include/cups/ppd.h" mock_include/cups/
           
-          # 2. Run configure with the expanded sandbox
+          # Configure
+          IPHONEOS_SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          PWD_PATH=$(pwd)
+          
           sh configure \
-          --openjdk-target=aarch64-apple-ios \
-          --with-sysroot=$(xcrun --sdk iphoneos --show-sdk-path) \
-          --with-cups-include=$(pwd)/mock_include \
-          --with-extra-cflags="-I$(pwd)/mock_include" \
-          --with-extra-cxxflags="-I$(pwd)/mock_include" \
-          --with-jvm-variants=server \
-          --disable-warnings-as-errors \
-          --disable-dtrace
+            --openjdk-target=aarch64-apple-ios \
+            --with-sysroot="$IPHONEOS_SDK" \
+            --with-cups-include="$PWD_PATH/mock_include" \
+            --with-extra-cflags="-I$PWD_PATH/mock_include" \
+            --with-extra-cxxflags="-I$PWD_PATH/mock_include" \
+            --with-jvm-variants=server \
+            --disable-warnings-as-errors \
+            --disable-dtrace
 
 
 
